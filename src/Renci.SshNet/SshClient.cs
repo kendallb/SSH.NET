@@ -4,6 +4,10 @@ using System.IO;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+#if FEATURE_TAP
+using System.Threading;
+using System.Threading.Tasks;
+#endif
 using Renci.SshNet.Common;
 
 namespace Renci.SshNet
@@ -260,8 +264,8 @@ namespace Renci.SshNet
         /// <returns>Returns an instance of <see cref="SshCommand"/> with execution results.</returns>
         /// <remarks>This method internally uses asynchronous calls.</remarks>
         /// <example>
-        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Result" language="C#" title="Running simple command" />
-        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Parallel" language="C#" title="Run many commands in parallel" />
+        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Result" language="C#" title="Running simple command async" />
+        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Parallel" language="C#" title="Run many commands in parallel async" />
         /// </example>
         /// <exception cref="ArgumentException">CommandText property is empty.</exception>
         /// <exception cref="T:Renci.SshNet.Common.SshException">Invalid Operation - An existing channel was used to execute this command.</exception>
@@ -274,6 +278,30 @@ namespace Renci.SshNet
             cmd.Execute();
             return cmd;
         }
+
+#if FEATURE_TAP
+        /// <summary>
+        /// Creates and executes the command.
+        /// </summary>
+        /// <param name="commandText">The command text.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>Returns an instance of <see cref="Task{SshCommand}"/> with execution results.</returns>
+        /// <remarks>This method internally uses asynchronous calls.</remarks>
+        /// <example>
+        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Result Async" language="C#" title="Running simple command async" />
+        /// </example>
+        /// <exception cref="ArgumentException">CommandText property is empty.</exception>
+        /// <exception cref="T:Renci.SshNet.Common.SshException">Invalid Operation - An existing channel was used to execute this command.</exception>
+        /// <exception cref="InvalidOperationException">Asynchronous operation is already in progress.</exception>
+        /// <exception cref="SshConnectionException">Client is not connected.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="commandText"/> is <c>null</c>.</exception>
+        public async Task<SshCommand> RunCommandAsync(string commandText, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var cmd = CreateCommand(commandText);
+            await cmd.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            return cmd;
+        }
+#endif
 
         /// <summary>
         /// Creates the shell.

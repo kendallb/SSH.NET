@@ -56,6 +56,33 @@ namespace Renci.SshNet.Tests.Classes
             }
         }
 
+#if FEATURE_TAP
+        [TestMethod]
+        [TestCategory("integration")]
+        public async Task Test_Run_SingleCommandAsync()
+        {
+            var host = Resources.HOST;
+            var username = Resources.USERNAME;
+            var password = Resources.PASSWORD;
+
+            using (var client = new SshClient(host, username, password))
+            {
+                #region Example SshCommand RunCommand Result Async
+                await client.ConnectAsync(default);
+
+                var testValue = Guid.NewGuid().ToString();
+                var command = await client.RunCommandAsync(string.Format("echo {0}", testValue), default);
+                var result = await command.GetResultAsync();
+                result = result.Substring(0, result.Length - 1);    //  Remove \n character returned by command
+
+                client.Disconnect();
+                #endregion
+
+                Assert.IsTrue(result.Equals(testValue));
+            }
+        }
+#endif
+
         [TestMethod]
         [TestCategory("integration")]
         public void Test_Execute_SingleCommand()
@@ -266,7 +293,7 @@ namespace Renci.SshNet.Tests.Classes
                 client.Connect();
 
                 var cmd = client.RunCommand("exit 128");
-                
+
                 Console.WriteLine(cmd.ExitStatus);
 
                 client.Disconnect();
@@ -500,6 +527,33 @@ namespace Renci.SshNet.Tests.Classes
             }
         }
 
+#if FEATURE_TAP
+        [TestMethod]
+        [TestCategory("integration")]
+        public async Task Test_Execute_Invalid_CommandAsync()
+        {
+            using (var client = new SshClient(Resources.HOST, Resources.USERNAME, Resources.PASSWORD))
+            {
+                #region Example SshCommand CreateCommand Error Async
+
+                await client.ConnectAsync(default);
+
+                var cmd = client.CreateCommand(";");
+                await cmd.ExecuteAsync();
+                var error = await cmd.GetErrorAsync();
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Console.WriteLine(error);
+                }
+
+                client.Disconnect();
+
+                #endregion
+
+                Assert.Inconclusive();
+            }
+        }
+#endif
 
         /// <summary>
         ///A test for BeginExecute

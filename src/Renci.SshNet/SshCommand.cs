@@ -7,6 +7,9 @@ using Renci.SshNet.Common;
 using Renci.SshNet.Messages.Connection;
 using Renci.SshNet.Messages.Transport;
 using System.Globalization;
+#if FEATURE_TAP
+using System.Threading.Tasks;
+#endif
 using Renci.SshNet.Abstractions;
 
 namespace Renci.SshNet
@@ -93,6 +96,32 @@ namespace Renci.SshNet
             }
         }
 
+#if FEATURE_TAP
+        /// <summary>
+        /// Gets the command execution result.
+        /// </summary>
+        /// <returns>Returns an instance of <see cref="Task{String}"/> with command execution result.</returns>
+        /// <example>
+        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Result Async" language="C#" title="Running simple command async" />
+        /// </example>
+        public async Task<string> GetResultAsync()
+        {
+            if (_result == null)
+            {
+                _result = new StringBuilder();
+            }
+
+            if (OutputStream != null && OutputStream.Length > 0)
+            {
+                // do not dispose the StreamReader, as it would also dispose the stream
+                var sr = new StreamReader(OutputStream, _encoding);
+                _result.Append(await sr.ReadToEndAsync().ConfigureAwait(false));
+            }
+
+            return _result.ToString();
+        }
+#endif
+
         private StringBuilder _error;
         /// <summary>
         /// Gets the command execution error.
@@ -123,6 +152,36 @@ namespace Renci.SshNet
                 return string.Empty;
             }
         }
+
+#if FEATURE_TAP
+        /// <summary>
+        /// Gets the command execution error.
+        /// </summary>
+        /// <returns>Returns an instance of <see cref="Task{String}"/> with the execution error.</returns>
+        /// <example>
+        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand CreateCommand Error Async" language="C#" title="Display command execution error async" />
+        /// </example>
+        public async Task<string> GetErrorAsync()
+        {
+            if (_hasError)
+            {
+                if (_error == null)
+                {
+                    _error = new StringBuilder();
+                }
+
+                if (ExtendedOutputStream != null && ExtendedOutputStream.Length > 0)
+                {
+                    // do not dispose the StreamReader, as it would also dispose the stream
+                    var sr = new StreamReader(ExtendedOutputStream, _encoding);
+                    _error.Append(await sr.ReadToEndAsync().ConfigureAwait(false));
+                }
+
+                return _error.ToString();
+            }
+            return string.Empty;
+        }
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SshCommand"/> class.
@@ -336,7 +395,7 @@ namespace Renci.SshNet
         }
 
         /// <summary>
-        /// Cancels command execution in asynchronous scenarios. 
+        /// Cancels command execution in asynchronous scenarios.
         /// </summary>
         public void CancelAsync()
         {

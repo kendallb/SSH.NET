@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+#if FEATURE_TAP
+using System.Threading.Tasks;
+#endif
 
 namespace Renci.SshNet.Tests.Classes
 {
@@ -34,6 +37,27 @@ namespace Renci.SshNet.Tests.Classes
             }
             #endregion
         }
+
+#if FEATURE_TAP
+        [TestMethod]
+        [TestCategory("Authentication")]
+        [TestCategory("integration")]
+        public async Task Test_ConnectAsync_Using_Correct_Password()
+        {
+            var host = Resources.HOST;
+            var username = Resources.USERNAME;
+            var password = Resources.PASSWORD;
+
+            #region Example SshClient(host, username) Connect
+            using (var client = new SshClient(host, username, password))
+            {
+                await client.ConnectAsync(default);
+                //  Do something here
+                client.Disconnect();
+            }
+            #endregion
+        }
+#endif
 
         [TestMethod]
         [TestCategory("Authentication")]
