@@ -7,6 +7,9 @@ using Renci.SshNet.Common;
 using Renci.SshNet.Messages.Connection;
 using Renci.SshNet.Messages.Transport;
 using System.Globalization;
+#if FEATURE_TAP
+using System.Threading.Tasks;
+#endif
 using Renci.SshNet.Abstractions;
 
 namespace Renci.SshNet
@@ -73,6 +76,7 @@ namespace Renci.SshNet
         /// <example>
         ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand RunCommand Result" language="C#" title="Running simple command" />
         /// </example>
+        [Obsolete("Result is going away. Please read the result from the OutputStream.")]
         public string Result
         {
             get
@@ -100,6 +104,7 @@ namespace Renci.SshNet
         /// <example>
         ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand CreateCommand Error" language="C#" title="Display command execution error" />
         /// </example>
+        [Obsolete("Error is going away. Please read the error from the ExtendedOutputStream!")]
         public string Error
         {
             get
@@ -281,13 +286,13 @@ namespace Renci.SshNet
         /// Waits for the pending asynchronous command execution to complete.
         /// </summary>
         /// <param name="asyncResult">The reference to the pending asynchronous request to finish.</param>
-        /// <returns>Command execution result.</returns>
+        /// <returns>Command execution exit status.</returns>
         /// <example>
         ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand CreateCommand BeginExecute IsCompleted EndExecute" language="C#" title="Asynchronous Command Execution" />
         /// </example>
         /// <exception cref="ArgumentException">Either the IAsyncResult object did not come from the corresponding async method on this type, or EndExecute was called multiple times with the same IAsyncResult.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="asyncResult"/> is <c>null</c>.</exception>
-        public string EndExecute(IAsyncResult asyncResult)
+        public int EndExecuteWithStatus(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
             {
@@ -315,8 +320,26 @@ namespace Renci.SshNet
 
                 commandAsyncResult.EndCalled = true;
 
-                return Result;
+                return ExitStatus;
             }
+        }
+
+        /// <summary>
+        /// Waits for the pending asynchronous command execution to complete.
+        /// </summary>
+        /// <param name="asyncResult">The reference to the pending asynchronous request to finish.</param>
+        /// <returns>Command execution result.</returns>
+        /// <example>
+        ///     <code source="..\..\src\Renci.SshNet.Tests\Classes\SshCommandTest.cs" region="Example SshCommand CreateCommand BeginExecute IsCompleted EndExecute" language="C#" title="Asynchronous Command Execution" />
+        /// </example>
+        /// <exception cref="ArgumentException">Either the IAsyncResult object did not come from the corresponding async method on this type, or EndExecute was called multiple times with the same IAsyncResult.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="asyncResult"/> is <c>null</c>.</exception>
+        public string EndExecute(IAsyncResult asyncResult)
+        {
+            EndExecuteWithStatus(asyncResult);
+#pragma warning disable CS0618
+            return Result;
+#pragma warning restore CS0618
         }
 
         /// <summary>
@@ -335,8 +358,62 @@ namespace Renci.SshNet
             return EndExecute(BeginExecute(null, null));
         }
 
+#if FEATURE_TAP
         /// <summary>
-        /// Cancels command execution in asynchronous scenarios. 
+        /// Asynchronously run a command.
+        /// </summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <param name="factory">The <see cref="System.Threading.Tasks.TaskFactory">TaskFactory</see> used to create the Task</param>
+        /// <param name="creationOptions">The TaskCreationOptions value that controls the behavior of the
+        /// created <see cref="T:System.Threading.Tasks.Task">Task</see>.</param>
+        /// <param name="scheduler">The <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
+        /// that is used to schedule the task that executes the end method.</param>
+        /// <returns>Returns <see cref="Task{Int32}"/> as command execution status result.</returns>
+        public Task<int> ExecuteAsync(
+            CancellationToken cancellationToken = default(CancellationToken),
+            TaskFactory<int> factory = null,
+            TaskCreationOptions creationOptions = default(TaskCreationOptions),
+            TaskScheduler scheduler = null)
+        {
+            return AsyncExtensions.FromAsync(
+                BeginExecute(),
+                EndExecuteWithStatus,
+                cancellationToken,
+                factory,
+                creationOptions,
+                scheduler);
+        }
+
+        /// <summary>
+        /// Asynchronously run a command.
+        /// </summary>
+        /// <param name="commandText">The command text to execute</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <param name="factory">The <see cref="System.Threading.Tasks.TaskFactory">TaskFactory</see> used to create the Task</param>
+        /// <param name="creationOptions">The TaskCreationOptions value that controls the behavior of the
+        /// created <see cref="T:System.Threading.Tasks.Task">Task</see>.</param>
+        /// <param name="scheduler">The <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
+        /// that is used to schedule the task that executes the end method.</param>
+        /// <returns>Returns <see cref="Task{Int32}"/> as command execution status result.</returns>
+        public Task<int> ExecuteAsync(
+            string commandText,
+            CancellationToken cancellationToken = default(CancellationToken),
+            TaskFactory<int> factory = null,
+            TaskCreationOptions creationOptions = default(TaskCreationOptions),
+            TaskScheduler scheduler = null)
+        {
+            return AsyncExtensions.FromAsync(
+                BeginExecute(commandText, null, null),
+                EndExecuteWithStatus,
+                cancellationToken,
+                factory,
+                creationOptions,
+                scheduler);
+        }
+#endif
+
+        /// <summary>
+        /// Cancels command execution in asynchronous scenarios.
         /// </summary>
         public void CancelAsync()
         {
