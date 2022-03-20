@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Renci.SshNet.Common;
 
 namespace Renci.SshNet
 {
@@ -49,8 +48,9 @@ namespace Renci.SshNet
             // In .NET 4.0, unobserved task exceptions would terminate the process.
             if (readyTask == cancellationTask)
             {
-                // Mark the async result as completed so it will terminate
-                ((AsyncResult)asyncResult).SetAsCompleted(null, false);
+                // If we have a wait handle, set it so the task will terminate
+                var waitHandle = asyncResult.AsyncWaitHandle as EventWaitHandle;
+                waitHandle?.Set();
 
                 // Now register the continuation as mentioned above
                 await asyncTask.ContinueWith(_ => asyncTask.Exception,
@@ -97,8 +97,9 @@ namespace Renci.SshNet
             // In .NET 4.0, unobserved task exceptions would terminate the process.
             if (readyTask == cancellationTask)
             {
-                // Mark the async result as completed so it will terminate
-                ((AsyncResult<TResult>)asyncResult).SetAsCompleted(default(TResult), false);
+                // If we have a wait handle, set it so the task will terminate
+                var waitHandle = asyncResult.AsyncWaitHandle as EventWaitHandle;
+                waitHandle?.Set();
 
                 // Now register the continuation as mentioned above
                 await asyncTask.ContinueWith(_ => asyncTask.Exception,
