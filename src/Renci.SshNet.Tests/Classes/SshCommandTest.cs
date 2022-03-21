@@ -576,7 +576,7 @@ namespace Renci.SshNet.Tests.Classes
                 await client.ConnectAsync(default);
 
                 var cmd = client.CreateCommand(";");
-                await cmd.ExecuteAsync();
+                await cmd.ExecuteAsync(default);
                 var error = await new StreamReader(cmd.ExtendedOutputStream).ReadToEndAsync();
                 if (!string.IsNullOrEmpty(error))
                 {

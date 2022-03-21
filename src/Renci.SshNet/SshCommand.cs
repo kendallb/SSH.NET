@@ -363,52 +363,19 @@ namespace Renci.SshNet
         /// Asynchronously run a command.
         /// </summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
-        /// <param name="factory">The <see cref="System.Threading.Tasks.TaskFactory">TaskFactory</see> used to create the Task</param>
-        /// <param name="creationOptions">The TaskCreationOptions value that controls the behavior of the
-        /// created <see cref="T:System.Threading.Tasks.Task">Task</see>.</param>
-        /// <param name="scheduler">The <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
-        /// that is used to schedule the task that executes the end method.</param>
         /// <returns>Returns <see cref="Task{Int32}"/> as command execution status result.</returns>
         public Task<int> ExecuteAsync(
-            CancellationToken cancellationToken = default(CancellationToken),
-            TaskFactory<int> factory = null,
-            TaskCreationOptions creationOptions = default(TaskCreationOptions),
-            TaskScheduler scheduler = null)
+            CancellationToken cancellationToken)
         {
             return AsyncExtensions.FromAsync(
                 BeginExecute(),
                 EndExecuteWithStatus,
                 cancellationToken,
-                factory,
-                creationOptions,
-                scheduler);
-        }
-
-        /// <summary>
-        /// Asynchronously run a command.
-        /// </summary>
-        /// <param name="commandText">The command text to execute</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
-        /// <param name="factory">The <see cref="System.Threading.Tasks.TaskFactory">TaskFactory</see> used to create the Task</param>
-        /// <param name="creationOptions">The TaskCreationOptions value that controls the behavior of the
-        /// created <see cref="T:System.Threading.Tasks.Task">Task</see>.</param>
-        /// <param name="scheduler">The <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see>
-        /// that is used to schedule the task that executes the end method.</param>
-        /// <returns>Returns <see cref="Task{Int32}"/> as command execution status result.</returns>
-        public Task<int> ExecuteAsync(
-            string commandText,
-            CancellationToken cancellationToken = default(CancellationToken),
-            TaskFactory<int> factory = null,
-            TaskCreationOptions creationOptions = default(TaskCreationOptions),
-            TaskScheduler scheduler = null)
-        {
-            return AsyncExtensions.FromAsync(
-                BeginExecute(commandText, null, null),
-                EndExecuteWithStatus,
-                cancellationToken,
-                factory,
-                creationOptions,
-                scheduler);
+                () =>
+                {
+                    UnsubscribeFromEventsAndDisposeChannel(_channel);
+                    _channel = null;
+                });
         }
 #endif
 
