@@ -107,7 +107,7 @@ namespace Renci.SshNet.Tests.Classes
                     result = await new StreamReader(command.OutputStream).ReadToEndAsync();
                     result = result.Substring(0, result.Length - 1);    //  Remove \n character returned by command
                 }
-                catch (TaskCanceledException)
+                catch (OperationCanceledException)
                 {
                     result = "canceled";
                 }
